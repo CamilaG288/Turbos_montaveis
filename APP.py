@@ -46,7 +46,7 @@ estrutura = estrutura[estrutura['Fantasma'].str.upper() != 'S']
 estrutura_n1 = estrutura[estrutura['Nivel'] == "1"]
 conjuntos_p = estrutura_n1[estrutura_n1['Componente'].str.endswith("P")]['Componente'].unique()
 
-# Nível 2: apenas se o pai for um conjunto com "P"
+# Nível 2: apenas se o Pai_Final for um conjunto com "P" listado no nível 1
 estrutura_n2 = estrutura[(estrutura['Nivel'] == "2") & (estrutura['Pai_Final'].isin(conjuntos_p))]
 estrutura = pd.concat([estrutura_n1, estrutura_n2])
 
