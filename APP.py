@@ -123,6 +123,26 @@ st.subheader("📊 Produtos que Podemos Montar com Estoque Disponível")
 df_montagem = pd.DataFrame(montagem.items(), columns=['Produto', 'Quantidade Possível'])
 st.dataframe(df_montagem, use_container_width=True)
 
+# Verificações adicionais para o produto exemplo
+produto_exemplo = "802925-01"
+st.subheader(f"🔍 Verificação do Produto {produto_exemplo}")
+
+if produto_exemplo in estrutura['Pai_Final'].values:
+    estrutura_exemplo = estrutura[estrutura['Pai_Final'] == produto_exemplo]
+    st.write("Estrutura do Produto:")
+    st.dataframe(estrutura_exemplo)
+
+    st.write("Estoque Atual dos Componentes (pós-reserva):")
+    st.dataframe(pd.DataFrame.from_dict({
+        comp: estoque_pos.get(comp, 0)
+        for comp in estrutura_exemplo['Componente'].unique()
+    }, orient='index', columns=['Estoque Disponível']).reset_index().rename(columns={'index': 'Componente'}))
+
+    st.write("Quantidade que Deveria Aparecer se Possível Montar:")
+    st.write(montagem.get(produto_exemplo, "Produto não foi considerado montável"))
+else:
+    st.warning("Produto não está presente na estrutura!")
+
 # Download do resultado
 buffer = BytesIO()
 df_montagem.to_excel(buffer, index=False)
