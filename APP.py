@@ -17,7 +17,7 @@ EXCLUIR_DESCRICOES = ["CINTA PLASTICA", "PLAQUETA", "SACO PLASTICO", "ETIQUETA",
 
 @st.cache_data
 def carregar_dados():
-    estrutura = pd.read_excel(URL_ESTRUTURA)
+    estrutura = pd.read_excel(URL_ESTRUTURA, header=None)
     curva = pd.read_excel(URL_CURVA)
     estoque = pd.read_excel(URL_ESTOQUE)
     pedidos = pd.read_excel(URL_PEDIDOS)
@@ -27,28 +27,36 @@ def carregar_dados():
 estrutura, curva, estoque, pedidos = carregar_dados()
 
 # Mostrar colunas da estrutura para depuração
-temp_colunas = estrutura.columns.tolist()
+temp_colunas = estrutura.iloc[0].tolist()
 st.write("Colunas disponíveis na planilha de estrutura:", temp_colunas)
 
-# Atribuir nomes de colunas corretos (evita erro com colunas inexistentes)
-estrutura.columns.values[6] = 'Pai_Final'
-estrutura.columns.values[15] = 'Componente'
-estrutura.columns.values[16] = 'Nivel'
-estrutura.columns.values[17] = 'Descricao'
-estrutura.columns.values[18] = 'Fantasma'
-estrutura.columns.values[19] = 'UM'
-estrutura.columns.values[20] = 'GRP'
+# Redefinir colunas com base na primeira linha
+estrutura.columns = estrutura.iloc[0]
+estrutura = estrutura.drop(0)
+
+# Atribuir nomes amigáveis de colunas
+estrutura = estrutura.rename(columns={
+    "Produto": "Pai_Final",
+    "Qtde. Líquida": "Qtde_Liquida",
+    "Setup/Perda": "Setup",
+    estrutura.columns[15]: "Componente",
+    estrutura.columns[16]: "Nivel",
+    estrutura.columns[17]: "Descricao",
+    estrutura.columns[18]: "Fantasma"
+})
 
 # Limpeza e filtros da estrutura
-estrutura = estrutura[estrutura['Nivel'].isin([1, 2])]
+estrutura = estrutura[estrutura['Nivel'].astype(str).isin(["1", "2"])]
 estrutura = estrutura[~estrutura['Componente'].astype(str).str.endswith("P")]
 estrutura = estrutura[estrutura['Fantasma'] != 'S']
 estrutura['Pai_Final'] = estrutura['Pai_Final'].astype(str).str.strip()
 estrutura['Componente'] = estrutura['Componente'].astype(str).str.strip()
-estrutura_nivel2 = estrutura[estrutura['Nivel'] == 2]
+
+# Nível 2 apenas quando o pai é o pai final
+estrutura_nivel2 = estrutura[estrutura['Nivel'] == "2"]
 estrutura_nivel2 = estrutura_nivel2[estrutura_nivel2['Pai_Final'] == estrutura_nivel2['Pai_Final']]
 estrutura = pd.concat([
-    estrutura[estrutura['Nivel'] == 1],
+    estrutura[estrutura['Nivel'] == "1"],
     estrutura_nivel2
 ])
 
