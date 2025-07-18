@@ -30,14 +30,21 @@ estrutura, curva, estoque, pedidos = carregar_dados()
 temp_colunas = estrutura.columns.tolist()
 st.write("Colunas disponíveis na planilha de estrutura:", temp_colunas)
 
+# Renomear colunas conforme estrutura
+estrutura.rename(columns={
+    'Produto': 'Componente',
+    'Produto Pai': 'Pai_Final',
+    'Produto Pai Imediato': 'Pai_Imediato'
+}, inplace=True)
+
 # Limpeza e filtros da estrutura
 estrutura = estrutura[estrutura['Nível'].isin([1, 2])]
-estrutura = estrutura[~estrutura['Produto'].astype(str).str.endswith("P")]
+estrutura = estrutura[~estrutura['Componente'].astype(str).str.endswith("P")]
 estrutura = estrutura[estrutura['Fantasma'] != 'S']
-estrutura['Produto Pai'] = estrutura['Produto Pai'].astype(str).str.strip()
-estrutura['Produto'] = estrutura['Produto'].astype(str).str.strip()
+estrutura['Pai_Final'] = estrutura['Pai_Final'].astype(str).str.strip()
+estrutura['Componente'] = estrutura['Componente'].astype(str).str.strip()
 estrutura_nivel2 = estrutura[estrutura['Nível'] == 2]
-estrutura_nivel2 = estrutura_nivel2[estrutura_nivel2['Produto Pai Imediato'] == estrutura_nivel2['Produto Pai']]
+estrutura_nivel2 = estrutura_nivel2[estrutura_nivel2['Pai_Imediato'] == estrutura_nivel2['Pai_Final']]
 estrutura = pd.concat([
     estrutura[estrutura['Nível'] == 1],
     estrutura_nivel2
@@ -64,10 +71,10 @@ reservas = []
 for _, row in pedidos_resumo.iterrows():
     pai = row['Produto']
     qtde = row['Qtde_Produzir']
-    estrutura_pai = estrutura[estrutura['Produto Pai'] == pai]
+    estrutura_pai = estrutura[estrutura['Pai_Final'] == pai]
     for _, comp in estrutura_pai.iterrows():
         reservas.append({
-            'Componente': comp['Produto'],
+            'Componente': comp['Componente'],
             'Produto_Pai': pai,
             'Qtde_Reservada': qtde
         })
@@ -83,12 +90,12 @@ for _, row in df_reservas.iterrows():
 # Aplicar algoritmo greedy com curva ABC
 montagem = {}
 for produto in curva_sorted['Produto']:
-    estrutura_pai = estrutura[estrutura['Produto Pai'] == produto]
+    estrutura_pai = estrutura[estrutura['Pai_Final'] == produto]
     if estrutura_pai.empty:
         continue
     min_possivel = math.inf
     for _, linha in estrutura_pai.iterrows():
-        comp = linha['Produto']
+        comp = linha['Componente']
         if any(comp.startswith(desc) for desc in EXCLUIR_DESCRICOES):
             continue
         qtd = estoque_pos.get(comp, 0)
@@ -96,7 +103,7 @@ for produto in curva_sorted['Produto']:
     if min_possivel >= 1 and min_possivel != math.inf:
         montagem[produto] = min_possivel
         for _, linha in estrutura_pai.iterrows():
-            comp = linha['Produto']
+            comp = linha['Componente']
             if any(comp.startswith(desc) for desc in EXCLUIR_DESCRICOES):
                 continue
             estoque_pos[comp] -= min_possivel
