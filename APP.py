@@ -43,12 +43,14 @@ estrutura = estrutura[estrutura['Fantasma'].astype(str).str.upper() != 'S']
 estrutura['Pai_Final'] = estrutura['Pai_Final'].astype(str).str.strip()
 estrutura['Componente'] = estrutura['Componente'].astype(str).str.strip()
 
-# Reorganização dos níveis
+# Reorganização dos níveis considerando também produtos presentes na curva ou pedidos
 estrutura_n1 = estrutura[estrutura['Nivel'].astype(str) == "1"]
-pais_validos = estrutura_n1['Pai_Final'].unique()
+potenciais_pais = set(curva['Produto'].astype(str).str.strip()).union(
+    set(pedidos['Produto'].astype(str).str.strip())
+)
 estrutura_n2 = estrutura[
     (estrutura['Nivel'].astype(str) == "2") &
-    (estrutura['Pai_Final'].isin(pais_validos))
+    (estrutura['Pai_Final'].isin(potenciais_pais))
 ]
 estrutura = pd.concat([estrutura_n1, estrutura_n2])
 
@@ -147,4 +149,4 @@ else:
 # Download do resultado
 buffer = BytesIO()
 df_montagem.to_excel(buffer, index=False)
-st.download_button("🗕️ Baixar Resultado em Excel", buffer.getvalue(), file_name="montagem_resultado.xlsx")
+st.download_button("🗅️ Baixar Resultado em Excel", buffer.getvalue(), file_name="montagem_resultado.xlsx")
