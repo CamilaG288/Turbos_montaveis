@@ -30,23 +30,25 @@ estrutura, curva, estoque, pedidos = carregar_dados()
 temp_colunas = estrutura.columns.tolist()
 st.write("Colunas disponíveis na planilha de estrutura:", temp_colunas)
 
-# Renomear colunas conforme estrutura
-estrutura.rename(columns={
-    'Produto': 'Componente',
-    'Produto Pai': 'Pai_Final',
-    'Produto Pai Imediato': 'Pai_Imediato'
-}, inplace=True)
+# Atribuir nomes de colunas corretos (evita erro com colunas inexistentes)
+estrutura.columns.values[6] = 'Pai_Final'
+estrutura.columns.values[15] = 'Componente'
+estrutura.columns.values[16] = 'Nivel'
+estrutura.columns.values[17] = 'Descricao'
+estrutura.columns.values[18] = 'Fantasma'
+estrutura.columns.values[19] = 'UM'
+estrutura.columns.values[20] = 'GRP'
 
 # Limpeza e filtros da estrutura
-estrutura = estrutura[estrutura['Nível'].isin([1, 2])]
+estrutura = estrutura[estrutura['Nivel'].isin([1, 2])]
 estrutura = estrutura[~estrutura['Componente'].astype(str).str.endswith("P")]
 estrutura = estrutura[estrutura['Fantasma'] != 'S']
 estrutura['Pai_Final'] = estrutura['Pai_Final'].astype(str).str.strip()
 estrutura['Componente'] = estrutura['Componente'].astype(str).str.strip()
-estrutura_nivel2 = estrutura[estrutura['Nível'] == 2]
-estrutura_nivel2 = estrutura_nivel2[estrutura_nivel2['Pai_Imediato'] == estrutura_nivel2['Pai_Final']]
+estrutura_nivel2 = estrutura[estrutura['Nivel'] == 2]
+estrutura_nivel2 = estrutura_nivel2[estrutura_nivel2['Pai_Final'] == estrutura_nivel2['Pai_Final']]
 estrutura = pd.concat([
-    estrutura[estrutura['Nível'] == 1],
+    estrutura[estrutura['Nivel'] == 1],
     estrutura_nivel2
 ])
 
