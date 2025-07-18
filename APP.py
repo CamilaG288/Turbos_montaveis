@@ -16,7 +16,6 @@ URL_PEDIDOS = "https://github.com/CamilaG288/Turbos_montaveis/raw/main/PEDIDOS.x
 EXCLUIR_DESCRICOES = ["CINTA PLASTICA", "PLAQUETA", "SACO PLASTICO", "ETIQUETA", "REBITE", "CAIXA", "CERTIFICADO"]
 
 @st.cache_data
-
 def carregar_dados():
     estrutura = pd.read_excel(URL_ESTRUTURA)
     curva = pd.read_excel(URL_CURVA)
@@ -26,6 +25,10 @@ def carregar_dados():
 
 # Processamento
 estrutura, curva, estoque, pedidos = carregar_dados()
+
+# Mostrar colunas da estrutura para depuração
+temp_colunas = estrutura.columns.tolist()
+st.write("Colunas disponíveis na planilha de estrutura:", temp_colunas)
 
 # Limpeza e filtros da estrutura
 estrutura = estrutura[estrutura['Nível Estrutura'].isin([1, 2])]
@@ -106,4 +109,5 @@ st.dataframe(df_montagem, use_container_width=True)
 # Download do resultado
 buffer = BytesIO()
 df_montagem.to_excel(buffer, index=False)
-st.download_button("📥 Baixar Resultado em Excel", buffer.getvalue(), file_name="montagem_resultado.xlsx")
+st.download_button("📅 Baixar Resultado em Excel", buffer.getvalue(), file_name="montagem_resultado.xlsx")
+
