@@ -36,20 +36,24 @@ estrutura = estrutura.rename(columns={
     "Nível": "Nivel"
 })
 
-# Limpeza e filtros da estrutura
-estrutura = estrutura[estrutura['Nivel'].astype(str).isin(["1", "2"])]
-estrutura = estrutura[~estrutura['Componente'].astype(str).str.endswith("P")]
-estrutura = estrutura[estrutura['Fantasma'].astype(str).str.upper() != 'S']
+# Padronizar textos e remover espaços
 estrutura['Pai_Final'] = estrutura['Pai_Final'].astype(str).str.strip()
 estrutura['Componente'] = estrutura['Componente'].astype(str).str.strip()
+estrutura['Fantasma'] = estrutura['Fantasma'].astype(str).str.strip()
+estrutura['Nivel'] = estrutura['Nivel'].astype(str).str.strip()
+
+# Limpeza e filtros da estrutura
+estrutura = estrutura[estrutura['Nivel'].isin(["1", "2"])]
+estrutura = estrutura[~estrutura['Componente'].str.endswith("P")]
+estrutura = estrutura[estrutura['Fantasma'].str.upper() != 'S']
 
 # Reorganização dos níveis considerando também produtos presentes na curva ou pedidos
-estrutura_n1 = estrutura[estrutura['Nivel'].astype(str) == "1"]
-potenciais_pais = set(curva['Produto'].astype(str).str.strip()).union(
+estrutura_n1 = estrutura[estrutura['Nivel'] == "1"]
+potenciais_pais = set(curva[curva.columns[0]].astype(str).str.strip()).union(
     set(pedidos['Produto'].astype(str).str.strip())
 )
 estrutura_n2 = estrutura[
-    (estrutura['Nivel'].astype(str) == "2") &
+    (estrutura['Nivel'] == "2") &
     (estrutura['Pai_Final'].isin(potenciais_pais))
 ]
 estrutura = pd.concat([estrutura_n1, estrutura_n2])
@@ -57,6 +61,7 @@ estrutura = pd.concat([estrutura_n1, estrutura_n2])
 # Curva ABC ordenada
 coluna_prioridade = curva.columns[7]
 curva = curva.rename(columns={curva.columns[0]: "Produto"})
+curva['Produto'] = curva['Produto'].astype(str).str.strip()
 curva_sorted = curva.sort_values(by=coluna_prioridade, ascending=True)
 
 # Preparar estoque
