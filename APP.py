@@ -43,13 +43,14 @@ estrutura = estrutura[estrutura['Fantasma'].astype(str).str.upper() != 'S']
 estrutura['Pai_Final'] = estrutura['Pai_Final'].astype(str).str.strip()
 estrutura['Componente'] = estrutura['Componente'].astype(str).str.strip()
 
-# Nível 2 apenas quando o pai é o pai final
-estrutura_nivel2 = estrutura[estrutura['Nivel'].astype(str) == "2"]
-estrutura_nivel2 = estrutura_nivel2[estrutura_nivel2['Pai_Final'] == estrutura_nivel2['Pai_Final']]
-estrutura = pd.concat([
-    estrutura[estrutura['Nivel'].astype(str) == "1"],
-    estrutura_nivel2
-])
+# Reorganização dos níveis
+estrutura_n1 = estrutura[estrutura['Nivel'].astype(str) == "1"]
+pais_validos = estrutura_n1['Pai_Final'].unique()
+estrutura_n2 = estrutura[
+    (estrutura['Nivel'].astype(str) == "2") &
+    (estrutura['Pai_Final'].isin(pais_validos))
+]
+estrutura = pd.concat([estrutura_n1, estrutura_n2])
 
 # Curva ABC ordenada
 coluna_prioridade = curva.columns[7]
