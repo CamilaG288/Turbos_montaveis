@@ -40,11 +40,14 @@ estrutura['Fantasma'] = estrutura['Fantasma'].astype(str).str.strip()
 estrutura['Nivel'] = estrutura['Nivel'].astype(str).str.strip()
 
 estrutura = estrutura[estrutura['Nivel'].isin(["1", "2"])]
-estrutura = estrutura[~estrutura['Componente'].str.endswith("P")]
 estrutura = estrutura[estrutura['Fantasma'].str.upper() != 'S']
 
+# Separar estruturas de nível 1 e conjuntos terminando em P
 estrutura_n1 = estrutura[estrutura['Nivel'] == "1"]
-estrutura_n2 = estrutura[(estrutura['Nivel'] == "2") & (estrutura['Pai_Final'] == estrutura['Pai_Final'])]
+conjuntos_p = estrutura_n1[estrutura_n1['Componente'].str.endswith("P")]['Componente'].unique()
+
+# Nível 2: apenas se o pai for um conjunto com "P"
+estrutura_n2 = estrutura[(estrutura['Nivel'] == "2") & (estrutura['Pai_Final'].isin(conjuntos_p))]
 estrutura = pd.concat([estrutura_n1, estrutura_n2])
 
 coluna_prioridade = curva.columns[7]
