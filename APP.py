@@ -1,5 +1,6 @@
 import streamlit as st
 import pandas as pd
+from io import BytesIO
 
 st.set_page_config(page_title="Painel de Estoque", layout="wide")
 st.title("📦 Consulta de Estoque Atual por Componente")
@@ -26,6 +27,7 @@ estoque_resumo = estoque.groupby("Componente", as_index=False)["Quantidade"].sum
 st.subheader("🔍 Estoque por Componente")
 st.dataframe(estoque_resumo, use_container_width=True)
 
-# Download
-csv = estoque_resumo.to_csv(index=False).encode('utf-8')
-st.download_button("📥 Baixar Estoque em CSV", data=csv, file_name="estoque_resumo.csv", mime="text/csv")
+# Download em Excel
+buffer = BytesIO()
+estoque_resumo.to_excel(buffer, index=False)
+st.download_button("📥 Baixar Estoque em Excel", data=buffer.getvalue(), file_name="estoque_resumo.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
