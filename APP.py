@@ -17,7 +17,7 @@ EXCLUIR_DESCRICOES = ["CINTA PLASTICA", "PLAQUETA", "SACO PLASTICO", "ETIQUETA",
 
 @st.cache_data
 def carregar_dados():
-    estrutura = pd.read_excel(URL_ESTRUTURA, header=None)
+    estrutura = pd.read_excel(URL_ESTRUTURA, skiprows=6)  # Pula linhas iniciais até o cabeçalho real
     curva = pd.read_excel(URL_CURVA)
     estoque = pd.read_excel(URL_ESTOQUE)
     pedidos = pd.read_excel(URL_PEDIDOS)
@@ -26,24 +26,16 @@ def carregar_dados():
 # Processamento
 estrutura, curva, estoque, pedidos = carregar_dados()
 
-# Mostrar colunas da estrutura para depuração
-temp_colunas = estrutura.iloc[0].tolist()
-st.write("Colunas disponíveis na planilha de estrutura:", temp_colunas)
-
-# Redefinir colunas com base na primeira linha
-estrutura.columns = estrutura.iloc[0]
-estrutura = estrutura.drop(0)
-
-# Atribuir nomes amigáveis de colunas
+# Renomear colunas para nomes amigáveis
 estrutura = estrutura.rename(columns={
     "Produto": "Pai_Final",
     "Qtde. Líquida": "Qtde_Liquida",
     "Setup/Perda": "Setup",
-    estrutura.columns[15]: "Componente",
-    estrutura.columns[16]: "Nivel",
-    estrutura.columns[17]: "Descricao",
-    estrutura.columns[18]: "Fantasma"
+    "Descrição do Produto": "Descricao",
+    "Nível": "Nivel"
 })
+
+estrutura = estrutura.rename(columns={estrutura.columns[15]: "Componente"})
 
 # Limpeza e filtros da estrutura
 estrutura = estrutura[estrutura['Nivel'].astype(str).isin(["1", "2"])]
