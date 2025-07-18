@@ -17,7 +17,7 @@ EXCLUIR_DESCRICOES = ["CINTA PLASTICA", "PLAQUETA", "SACO PLASTICO", "ETIQUETA",
 
 @st.cache_data
 def carregar_dados():
-    estrutura = pd.read_excel(URL_ESTRUTURA, skiprows=6)
+    estrutura = pd.read_excel(URL_ESTRUTURA, skiprows=1)  # ajustado para pular apenas a primeira linha
     curva = pd.read_excel(URL_CURVA)
     estoque = pd.read_excel(URL_ESTOQUE)
     pedidos = pd.read_excel(URL_PEDIDOS)
