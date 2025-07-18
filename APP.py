@@ -52,8 +52,9 @@ estrutura = pd.concat([
     estrutura_nivel2
 ])
 
-# Curva ABC ordenada
-curva_sorted = curva.sort_values(by='H', ascending=True)
+# Curva ABC ordenada (ajustado para usar a coluna correta)
+coluna_prioridade = curva.columns[7]  # supondo que a 8ª coluna seja a coluna H original
+curva_sorted = curva.sort_values(by=coluna_prioridade, ascending=True)
 
 # Preparar estoque
 estoque = estoque.rename(columns={"Produto": "Componente", "Qtde Atual": "Quantidade"})
@@ -118,4 +119,4 @@ st.dataframe(df_montagem, use_container_width=True)
 # Download do resultado
 buffer = BytesIO()
 df_montagem.to_excel(buffer, index=False)
-st.download_button("📅 Baixar Resultado em Excel", buffer.getvalue(), file_name="montagem_resultado.xlsx")
+st.download_button("🗕️ Baixar Resultado em Excel", buffer.getvalue(), file_name="montagem_resultado.xlsx")
