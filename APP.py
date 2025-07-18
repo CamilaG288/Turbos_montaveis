@@ -17,7 +17,7 @@ EXCLUIR_DESCRICOES = ["CINTA PLASTICA", "PLAQUETA", "SACO PLASTICO", "ETIQUETA",
 
 @st.cache_data
 def carregar_dados():
-    estrutura = pd.read_excel(URL_ESTRUTURA, skiprows=6)  # Pula linhas iniciais até o cabeçalho real
+    estrutura = pd.read_excel(URL_ESTRUTURA, skiprows=6)
     curva = pd.read_excel(URL_CURVA)
     estoque = pd.read_excel(URL_ESTOQUE)
     pedidos = pd.read_excel(URL_PEDIDOS)
@@ -27,6 +27,7 @@ def carregar_dados():
 estrutura, curva, estoque, pedidos = carregar_dados()
 
 # Renomear colunas para nomes amigáveis
+estrutura.columns.values[15] = "Componente"
 estrutura = estrutura.rename(columns={
     "Produto": "Pai_Final",
     "Qtde. Líquida": "Qtde_Liquida",
@@ -35,32 +36,30 @@ estrutura = estrutura.rename(columns={
     "Nível": "Nivel"
 })
 
-estrutura = estrutura.rename(columns={estrutura.columns[15]: "Componente"})
-
 # Limpeza e filtros da estrutura
 estrutura = estrutura[estrutura['Nivel'].astype(str).isin(["1", "2"])]
 estrutura = estrutura[~estrutura['Componente'].astype(str).str.endswith("P")]
-estrutura = estrutura[estrutura['Fantasma'] != 'S']
+estrutura = estrutura[estrutura['Fantasma'].astype(str).str.upper() != 'S']
 estrutura['Pai_Final'] = estrutura['Pai_Final'].astype(str).str.strip()
 estrutura['Componente'] = estrutura['Componente'].astype(str).str.strip()
 
 # Nível 2 apenas quando o pai é o pai final
-estrutura_nivel2 = estrutura[estrutura['Nivel'] == "2"]
+estrutura_nivel2 = estrutura[estrutura['Nivel'].astype(str) == "2"]
 estrutura_nivel2 = estrutura_nivel2[estrutura_nivel2['Pai_Final'] == estrutura_nivel2['Pai_Final']]
 estrutura = pd.concat([
-    estrutura[estrutura['Nivel'] == "1"],
+    estrutura[estrutura['Nivel'].astype(str) == "1"],
     estrutura_nivel2
 ])
 
-# Curva ABC ordenada (ajustado para usar a coluna correta)
-coluna_prioridade = curva.columns[7]  # 8ª coluna
+# Curva ABC ordenada
+coluna_prioridade = curva.columns[7]
 curva = curva.rename(columns={curva.columns[0]: "Produto"})
 curva_sorted = curva.sort_values(by=coluna_prioridade, ascending=True)
 
 # Preparar estoque
 estoque = estoque.rename(columns={"Produto": "Componente", "Qtde Atual": "Quantidade"})
 estoque['Componente'] = estoque['Componente'].astype(str).str.strip()
-estoque_dict = estoque.groupby("Componente")['Quantidade'].sum().to_dict()
+estoque_dict = estoque.groupby("Componente")["Quantidade"].sum().to_dict()
 
 # Limpar pedidos
 pedidos['Produto'] = pedidos['Produto'].astype(str).str.strip()
@@ -83,7 +82,10 @@ for _, row in pedidos_resumo.iterrows():
             'Qtde_Reservada': qtde * comp['Qtde_Liquida']
         })
 df_reservas = pd.DataFrame(reservas)
-df_reservas = df_reservas.groupby('Componente', as_index=False)['Qtde_Reservada'].sum()
+if not df_reservas.empty:
+    df_reservas = df_reservas.groupby('Componente', as_index=False)['Qtde_Reservada'].sum()
+else:
+    df_reservas = pd.DataFrame(columns=['Componente', 'Qtde_Reservada'])
 
 # Atualizar estoque com reservas
 estoque_pos = estoque_dict.copy()
@@ -100,7 +102,8 @@ for produto in curva_sorted['Produto']:
     min_possivel = math.inf
     for _, linha in estrutura_pai.iterrows():
         comp = linha['Componente']
-        if any(excl in linha['Descricao'].upper() for excl in EXCLUIR_DESCRICOES):
+        descricao = str(linha['Descricao']).upper()
+        if any(excl in descricao for excl in EXCLUIR_DESCRICOES):
             continue
         qtd_necessaria = linha['Qtde_Liquida']
         qtd_estoque = estoque_pos.get(comp, 0)
@@ -110,7 +113,8 @@ for produto in curva_sorted['Produto']:
         montagem[produto] = min_possivel
         for _, linha in estrutura_pai.iterrows():
             comp = linha['Componente']
-            if any(excl in linha['Descricao'].upper() for excl in EXCLUIR_DESCRICOES):
+            descricao = str(linha['Descricao']).upper()
+            if any(excl in descricao for excl in EXCLUIR_DESCRICOES):
                 continue
             estoque_pos[comp] -= min_possivel * linha['Qtde_Liquida']
 
