@@ -53,7 +53,8 @@ estrutura = pd.concat([
 ])
 
 # Curva ABC ordenada (ajustado para usar a coluna correta)
-coluna_prioridade = curva.columns[7]  # supondo que a 8ª coluna seja a coluna H original
+coluna_prioridade = curva.columns[7]  # 8ª coluna
+curva = curva.rename(columns={curva.columns[0]: "Produto"})
 curva_sorted = curva.sort_values(by=coluna_prioridade, ascending=True)
 
 # Preparar estoque
@@ -79,7 +80,7 @@ for _, row in pedidos_resumo.iterrows():
         reservas.append({
             'Componente': comp['Componente'],
             'Produto_Pai': pai,
-            'Qtde_Reservada': qtde
+            'Qtde_Reservada': qtde * comp['Qtde_Liquida']
         })
 df_reservas = pd.DataFrame(reservas)
 df_reservas = df_reservas.groupby('Componente', as_index=False)['Qtde_Reservada'].sum()
@@ -99,17 +100,19 @@ for produto in curva_sorted['Produto']:
     min_possivel = math.inf
     for _, linha in estrutura_pai.iterrows():
         comp = linha['Componente']
-        if any(comp.startswith(desc) for desc in EXCLUIR_DESCRICOES):
+        if any(excl in linha['Descricao'].upper() for excl in EXCLUIR_DESCRICOES):
             continue
-        qtd = estoque_pos.get(comp, 0)
-        min_possivel = min(min_possivel, math.floor(qtd))
+        qtd_necessaria = linha['Qtde_Liquida']
+        qtd_estoque = estoque_pos.get(comp, 0)
+        if qtd_necessaria > 0:
+            min_possivel = min(min_possivel, math.floor(qtd_estoque / qtd_necessaria))
     if min_possivel >= 1 and min_possivel != math.inf:
         montagem[produto] = min_possivel
         for _, linha in estrutura_pai.iterrows():
             comp = linha['Componente']
-            if any(comp.startswith(desc) for desc in EXCLUIR_DESCRICOES):
+            if any(excl in linha['Descricao'].upper() for excl in EXCLUIR_DESCRICOES):
                 continue
-            estoque_pos[comp] -= min_possivel
+            estoque_pos[comp] -= min_possivel * linha['Qtde_Liquida']
 
 # Mostrar resultados
 st.subheader("📊 Produtos que Podemos Montar com Estoque Disponível")
