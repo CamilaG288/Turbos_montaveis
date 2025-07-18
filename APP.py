@@ -33,7 +33,7 @@ st.write("Colunas disponíveis na planilha de estrutura:", temp_colunas)
 # Limpeza e filtros da estrutura
 estrutura = estrutura[estrutura['Nível'].isin([1, 2])]
 estrutura = estrutura[~estrutura['Produto'].astype(str).str.endswith("P")]
-estrutura = estrutura[estrutura['S'] != 'S']
+estrutura = estrutura[estrutura['Fantasma'] != 'S']
 estrutura['Produto Pai'] = estrutura['Produto Pai'].astype(str).str.strip()
 estrutura['Produto'] = estrutura['Produto'].astype(str).str.strip()
 estrutura_nivel2 = estrutura[estrutura['Nível'] == 2]
