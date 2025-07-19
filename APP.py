@@ -3,7 +3,7 @@ import pandas as pd
 from io import BytesIO
 
 st.set_page_config(page_title="Análise de Pedidos", layout="wide")
-st.title("📦 Análise de Pedidos - Qtde. Produzir + Componentes Necessários")
+st.title("📦 Análise de Pedidos - Qtde. Produzir + Estrutura Nível 2")
 
 # Função auxiliar para exportar Excel
 def converter_para_excel(df):
@@ -15,27 +15,20 @@ def converter_para_excel(df):
 
 # --- ETAPA 1: Análise dos Pedidos ---
 
-# Leitura da planilha de pedidos
 URL_PEDIDOS = "https://github.com/CamilaG288/Turbos_montaveis/raw/main/PEDIDOS.xlsx"
 df_pedidos = pd.read_excel(URL_PEDIDOS)
 
-# Cálculo da quantidade real: Qtde. Abe - (Qtde. Separ - Qtde. Ate)
 df_pedidos["Quantidade_Produzir"] = df_pedidos.iloc[:, 15] - (df_pedidos.iloc[:, 16] - df_pedidos.iloc[:, 13])
-
-# Filtrar pedidos com quantidade a produzir > 0
 df_pedidos_filtrados = df_pedidos[df_pedidos["Quantidade_Produzir"] > 0].copy()
 
-# Reorganizar colunas para exibição
 colunas_exibir = [
     "Cliente", "Nome", "Tp.Doc", "Pedido", "Produto", "Descricao", "Qtde. Abe", "Quantidade_Produzir"
 ]
 df_exibir = df_pedidos_filtrados[colunas_exibir]
 
-# Exibir pedidos válidos
 st.subheader("📌 Pedidos com Quantidade a Produzir > 0")
 st.dataframe(df_exibir)
 
-# Botão para baixar pedidos filtrados
 st.download_button(
     label="📥 Baixar Pedidos com Qtde. Produzir > 0",
     data=converter_para_excel(df_exibir),
@@ -43,17 +36,14 @@ st.download_button(
     mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
 )
 
-# --- ETAPA 2: Componentes por Estrutura ---
+# --- ETAPA 2: Explosão de Estrutura até Nível 2 com ajuste de conjuntos "P" ---
 
-# Leitura da estrutura de produtos
 URL_ESTRUTURA = "https://github.com/CamilaG288/Turbos_montaveis/raw/main/ESTRUTURAS.xlsx"
 df_estrutura = pd.read_excel(URL_ESTRUTURA)
 
-# Conversão e limpeza das colunas importantes
+# Limpeza e conversão
 df_estrutura.iloc[:, 1] = df_estrutura.iloc[:, 1].astype(str).str.strip()    # Coluna B - pai
 df_estrutura.iloc[:, 15] = df_estrutura.iloc[:, 15].astype(str).str.strip() # Coluna P - filho
-
-# Conversão da coluna W (índice 22) para float, tratando vírgulas e espaços
 df_estrutura.iloc[:, 22] = (
     df_estrutura.iloc[:, 22]
     .astype(str)
@@ -62,46 +52,64 @@ df_estrutura.iloc[:, 22] = (
     .astype(float)
 )
 
-# Filtro: remove fantasmas e pais que terminam com "P"
-df_estrutura_filtrada = df_estrutura[
+# Filtro: remove fantasmas e garante filhos válidos
+df_estrutura_limpa = df_estrutura[
     (df_estrutura.iloc[:, 19] != "S") & (df_estrutura.iloc[:, 15].notna())
-]
-df_estrutura_filtrada = df_estrutura_filtrada[~df_estrutura_filtrada.iloc[:, 1].str.endswith("P")]
+].copy()
 
-# Montar lista de componentes
-componentes_lista = []
+# Criar dicionário pai → [(filho, qtd)]
+estrutura_dict = {}
+for _, row in df_estrutura_limpa.iterrows():
+    pai = row.iloc[1]
+    filho = row.iloc[15]
+    qtd = row.iloc[22]
+    if pd.notna(pai) and pd.notna(filho) and pd.notna(qtd):
+        estrutura_dict.setdefault(pai, []).append((filho, qtd))
+
+# Explodir estrutura até nível 2
+estrutura_expandidas = []
 
 for _, pedido in df_pedidos_filtrados.iterrows():
-    produto_final = str(pedido["Produto"]).strip()
-    quantidade_produzir = pedido["Quantidade_Produzir"]
+    pai_final = str(pedido["Produto"]).strip()
+    qtd_produzir = pedido["Quantidade_Produzir"]
 
-    filhos = df_estrutura_filtrada[df_estrutura_filtrada.iloc[:, 1] == produto_final]
+    filhos_n1 = estrutura_dict.get(pai_final, [])
 
-    for _, filho in filhos.iterrows():
-        cod_componente = filho.iloc[15]      # Coluna P (componente)
-        qtd_por_unidade = filho.iloc[22]     # Coluna W
-
-        if pd.notna(qtd_por_unidade) and qtd_por_unidade > 0:
-            componentes_lista.append({
-                "Produto Final": produto_final,
-                "Componente": cod_componente,
-                "Quantidade por Unidade": qtd_por_unidade,
-                "Quantidade a Produzir": quantidade_produzir,
-                "Qtde Necessária do Componente": quantidade_produzir * qtd_por_unidade,
+    for filho1, qtd1 in filhos_n1:
+        if filho1.endswith("P"):
+            filhos_do_P = estrutura_dict.get(filho1, [])
+            for filho2, qtd2 in filhos_do_P:
+                estrutura_expandidas.append({
+                    "Pai Final": pai_final,
+                    "Componente": filho2,
+                    "Nível": 2,
+                    "Qtd por Unidade": qtd1 * qtd2,
+                    "Qtd Produzir": qtd_produzir,
+                    "Qtd Necessária": qtd_produzir * qtd1 * qtd2,
+                    "Cliente": pedido["Cliente"],
+                    "Pedido": pedido["Pedido"]
+                })
+        else:
+            estrutura_expandidas.append({
+                "Pai Final": pai_final,
+                "Componente": filho1,
+                "Nível": 1,
+                "Qtd por Unidade": qtd1,
+                "Qtd Produzir": qtd_produzir,
+                "Qtd Necessária": qtd_produzir * qtd1,
                 "Cliente": pedido["Cliente"],
                 "Pedido": pedido["Pedido"]
             })
 
-# Exibir resultado final
-df_componentes = pd.DataFrame(componentes_lista)
+# Resultado da estrutura expandida
+df_estrutura_nivel2 = pd.DataFrame(estrutura_expandidas)
 
-st.subheader("🧮 Componentes Necessários por Estrutura")
-st.dataframe(df_componentes)
+st.subheader("🧬 Estrutura Explodida até Nível 2 (com ajuste de conjuntos 'P')")
+st.dataframe(df_estrutura_nivel2)
 
-# Botão para baixar componentes
 st.download_button(
-    label="📥 Baixar Componentes Necessários",
-    data=converter_para_excel(df_componentes),
-    file_name="componentes_necessarios.xlsx",
+    label="📥 Baixar Estrutura Nível 2",
+    data=converter_para_excel(df_estrutura_nivel2),
+    file_name="estrutura_nivel2.xlsx",
     mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
 )
