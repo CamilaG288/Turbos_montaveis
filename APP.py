@@ -70,11 +70,11 @@ for _, row in estrutura_n1.iterrows():
             'Nível': 'Filho'
         })
 
-# Verificar se o componente do nível 2 tem o mesmo pai final
+# Incluir componentes do nível 2 com o mesmo Pai_Final, mesmo que repetidos
 for _, row in estrutura_n2.iterrows():
     pai_final = row['Pai_Final']
     componente = row['Componente']
-    if not componente.endswith('P') and not any(h['Componente'] == componente for h in hierarquia):
+    if not componente.endswith('P'):
         hierarquia.append({
             'Pai_Final': pai_final,
             'Pai_Imediato': pai_final,
