@@ -1,6 +1,5 @@
 import streamlit as st
 import pandas as pd
-import re
 
 st.set_page_config(page_title="Análise da Estrutura", layout="wide")
 st.title("📦 Análise da Estrutura - Quantidade de Pais Finais")
@@ -18,11 +17,9 @@ st.dataframe(estrutura.head(10))
 # Coluna B = index 1 => representa o Pai_Final
 estrutura['Pai_Final'] = estrutura[1].astype(str).str.strip()
 
-# 🔍 Tentar extrair apenas códigos válidos com regex (ex: 802925-01, RB6559-6)
-estrutura['Pai_Final'] = estrutura['Pai_Final'].apply(lambda x: re.findall(r"[A-Z0-9]+-[0-9]+", x)[0] if re.findall(r"[A-Z0-9]+-[0-9]+", x) else None)
-
-# Remover valores nulos após extração
-estrutura_filtrada = estrutura[estrutura['Pai_Final'].notna()]
+# Remover entradas nulas, vazias ou que são cabeçalho duplicado
+estrutura_filtrada = estrutura[estrutura['Pai_Final'].str.len() > 1]
+estrutura_filtrada = estrutura_filtrada[~estrutura_filtrada['Pai_Final'].str.contains("Produto", case=False)]
 
 # Contar pais únicos válidos
 pais_unicos = estrutura_filtrada['Pai_Final'].nunique()
