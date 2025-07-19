@@ -27,7 +27,7 @@ df_pedidos_filtrados = df_pedidos[df_pedidos["Quantidade_Produzir"] > 0].copy()
 
 # Reorganizar colunas para exibição
 colunas_exibir = [
-    "Cliente", "Nome", "Tp.Doc", "Pedido", "Qtde. Abe", "Quantidade_Produzir"
+    "Cliente", "Nome", "Tp.Doc", "Pedido", "Produto", "Descricao", "Qtde. Abe", "Quantidade_Produzir"
 ]
 df_exibir = df_pedidos_filtrados[colunas_exibir]
 
