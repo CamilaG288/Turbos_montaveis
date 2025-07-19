@@ -22,7 +22,7 @@ df_pedidos["Quantidade_Produzir"] = df_pedidos.iloc[:, 15] - (df_pedidos.iloc[:,
 
 # Normalização de textos
 df_pedidos["Descricao"] = df_pedidos["Descricao"].astype(str).str.upper()
-df_pedidos["Tp.Doc"] = df_pedidos["Tp.Doc"].astype(str).str.upper()
+df_pedidos["Tp.Doc"] = df_pedidos["Tp.Doc"].astype(str).str.strip().str.upper()
 
 # Filtros
 desc_excluir_pedidos = ["BONÉ", "CAMISETA", "CHAVEIRO", "CORTA VENTO", "CORTE"]
@@ -133,4 +133,3 @@ st.download_button(
     file_name="estrutura_nivel_2_filtrada.xlsx",
     mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
 )
-
