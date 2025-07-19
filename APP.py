@@ -19,9 +19,9 @@ def carregar_estrutura():
     estrutura_original = pd.read_excel(URL_ESTRUTURA)  # Não pula linhas!
     st.write("🔧 Total de linhas na estrutura original:", len(estrutura_original))
 
-    estrutura_original.columns.values[15] = "Componente"
+    estrutura_original.columns.values[1] = "Pai_Final"  # Coluna B
+    estrutura_original.columns.values[15] = "Componente"  # Coluna P
     estrutura = estrutura_original.rename(columns={
-        "Produto": "Pai_Final",
         "Qtde. Líquida": "Qtde_Liquida",
         "Setup/Perda": "Setup",
         "Descrição do Produto": "Descricao",
