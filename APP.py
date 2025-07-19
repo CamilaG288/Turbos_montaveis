@@ -4,13 +4,15 @@ import pandas as pd
 st.set_page_config(page_title="Análise de Pedidos", layout="wide")
 st.title("📦 Análise de Pedidos - Qtde. Real")
 
-# Upload ou leitura do arquivo localmente ou via GitHub
-url_pedidos = "https://github.com/CamilaG288/Turbos_montaveis/raw/main/PEDIDOS.xlsx"
-df = pd.read_excel(url_pedidos)
+# Leitura do arquivo direto do GitHub
+URL_PEDIDOS = "https://github.com/CamilaG288/Turbos_montaveis/raw/main/PEDIDOS.xlsx"
+df = pd.read_excel(URL_PEDIDOS)
 
-# Cálculo: Qtde. Abe - (Qtde. Separ - Qtde. Ate)
+# Cálculo da quantidade real: P - (Q - N)
 df["QUANTIDADE_REAL"] = df["P"] - (df["Q"] - df["N"])
 
-# Exibe a tabela com a nova coluna
-st.dataframe(df[["P", "Q", "N", "QUANTIDADE_REAL"]])
+# Exibir resultado com colunas relevantes
+colunas_exibir = ["PEDIDO", "PRODUTO", "CLIENTE", "P", "Q", "N", "QUANTIDADE_REAL"]
+colunas_exibir = [col for col in colunas_exibir if col in df.columns]  # Garante que existam
 
+st.dataframe(df[colunas_exibir])
