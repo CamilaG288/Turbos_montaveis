@@ -16,9 +16,11 @@ def carregar_estoque():
 
 @st.cache_data
 def carregar_estrutura():
-    estrutura = pd.read_excel(URL_ESTRUTURA)  # Não pula linhas!
-    estrutura.columns.values[15] = "Componente"
-    estrutura = estrutura.rename(columns={
+    estrutura_original = pd.read_excel(URL_ESTRUTURA)  # Não pula linhas!
+    st.write("🔧 Total de linhas na estrutura original:", len(estrutura_original))
+
+    estrutura_original.columns.values[15] = "Componente"
+    estrutura = estrutura_original.rename(columns={
         "Produto": "Pai_Final",
         "Qtde. Líquida": "Qtde_Liquida",
         "Setup/Perda": "Setup",
@@ -35,6 +37,8 @@ def carregar_estrutura():
     estrutura = estrutura[estrutura['Nivel'].isin(["1", "2"])]
     estrutura = estrutura[~estrutura['Componente'].str.endswith("P")]
     estrutura = estrutura[estrutura['Fantasma'] != 'S']
+
+    st.write("✅ Linhas após filtro:", len(estrutura))
 
     return estrutura[["Pai_Final", "Componente", "Descricao", "Nivel", "Qtde_Liquida"]]
 
