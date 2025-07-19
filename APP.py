@@ -44,40 +44,39 @@ st.download_button(
     mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
 )
 
-# --- ETAPA 2: Componentes por Estrutura (revisado) ---
+# --- ETAPA 2: Componentes por Estrutura (corrigido para índice 22) ---
 
 # Leitura da estrutura de produtos
 URL_ESTRUTURA = "https://github.com/CamilaG288/Turbos_montaveis/raw/main/ESTRUTURAS.xlsx"
 df_estrutura = pd.read_excel(URL_ESTRUTURA)
 
-# Conversão para texto e limpeza das colunas importantes
-df_estrutura.iloc[:, 1] = df_estrutura.iloc[:, 1].astype(str).str.strip()   # Coluna B - pai
+# Conversão e limpeza
+df_estrutura.iloc[:, 1] = df_estrutura.iloc[:, 1].astype(str).str.strip()    # Coluna B - pai
 df_estrutura.iloc[:, 15] = df_estrutura.iloc[:, 15].astype(str).str.strip() # Coluna P - filho
 
-# Conversão da coluna W (índice 23) para float, tratando vírgulas
-df_estrutura.iloc[:, 23] = (
-    df_estrutura.iloc[:, 23]
+# Conversão da coluna W (índice 22) para float, tratando vírgulas e espaços
+df_estrutura.iloc[:, 22] = (
+    df_estrutura.iloc[:, 22]
     .astype(str)
     .str.replace(",", ".", regex=False)
+    .str.strip()
     .astype(float)
 )
 
-# Filtrar fantasmas e filhos válidos
+# Filtro de fantasmas e pais inválidos
 df_estrutura_filtrada = df_estrutura[
     (df_estrutura.iloc[:, 19] != "S") & (df_estrutura.iloc[:, 15].notna())
-].copy()
-
-# Ignorar pais terminados com "P"
+]
 df_estrutura_filtrada = df_estrutura_filtrada[~df_estrutura_filtrada.iloc[:, 1].str.endswith("P")]
 
-# Verificação: filhos do produto 801200
+# Verificação rápida
 st.subheader("🔍 Verificação rápida: filhos do 801200")
 st.dataframe(
     df_estrutura_filtrada[df_estrutura_filtrada.iloc[:, 1] == "801200"]
-    [[df_estrutura.columns[1], df_estrutura.columns[15], df_estrutura.columns[23]]]
+    [[df_estrutura.columns[1], df_estrutura.columns[15], df_estrutura.columns[22]]]
 )
 
-# Montar lista de componentes necessários
+# Montar componentes
 componentes_lista = []
 
 for _, pedido in df_pedidos_filtrados.iterrows():
@@ -87,8 +86,8 @@ for _, pedido in df_pedidos_filtrados.iterrows():
     filhos = df_estrutura_filtrada[df_estrutura_filtrada.iloc[:, 1] == produto_final]
 
     for _, filho in filhos.iterrows():
-        cod_componente = filho.iloc[15]      # Coluna P (componente)
-        qtd_por_unidade = filho.iloc[23]     # Coluna W (quantidade por unidade)
+        cod_componente = filho.iloc[15]      # Coluna P
+        qtd_por_unidade = filho.iloc[22]     # Coluna W corrigida
 
         if pd.notna(qtd_por_unidade) and qtd_por_unidade > 0:
             componentes_lista.append({
@@ -101,7 +100,7 @@ for _, pedido in df_pedidos_filtrados.iterrows():
                 "Pedido": pedido["Pedido"]
             })
 
-# Exibir componentes calculados
+# Resultado final
 df_componentes = pd.DataFrame(componentes_lista)
 
 st.subheader("🧮 Componentes Necessários por Estrutura")
@@ -114,4 +113,3 @@ st.download_button(
     file_name="componentes_necessarios.xlsx",
     mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
 )
-
