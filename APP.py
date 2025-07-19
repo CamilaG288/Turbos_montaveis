@@ -3,7 +3,7 @@ import pandas as pd
 from io import BytesIO
 
 st.set_page_config(page_title="Hierarquia Pai-Filho", layout="wide")
-st.title("🔗 Hierarquia Completa: Pai, Filho e Neto")
+st.title("🔗 Hierarquia Completa: Pai, Filho, Neto e além")
 
 # URL da planilha
 URL_ESTRUTURA = "https://github.com/CamilaG288/Turbos_montaveis/raw/main/ESTRUTURAS.xlsx"
@@ -26,47 +26,36 @@ estrutura = estrutura[
 # Filtrar fantasmas
 estrutura = estrutura[estrutura['Fantasma'] != 'S']
 
-# Separar níveis
-n1 = estrutura[estrutura['Nivel'] == '1']
-n2 = estrutura[estrutura['Nivel'] == '2']
-
+# Construir hierarquia completa
 hierarquia = []
 
-# Construir relação
-for _, row in n1.iterrows():
-    pai_final = row['Pai_Final']
-    filho = row['Componente']
+# Mapeia estrutura pai-filho para múltiplos níveis
+mapa_pai_filho = estrutura.groupby('Pai_Final')['Componente'].apply(list).to_dict()
 
-    if filho.endswith('P'):
-        filhos_do_conjunto = n2[n2['Pai_Final'] == filho]
-        for _, neto in filhos_do_conjunto.iterrows():
-            hierarquia.append({
-                'Pai_Final': pai_final,
-                'Pai_Imediato': filho,
-                'Componente': neto['Componente'],
-                'Nível': 'Neto'
-            })
-        hierarquia.append({
-            'Pai_Final': pai_final,
-            'Pai_Imediato': pai_final,
-            'Componente': filho,
-            'Nível': 'Filho (Conjunto)'
-        })
-    else:
-        hierarquia.append({
-            'Pai_Final': pai_final,
-            'Pai_Imediato': pai_final,
-            'Componente': filho,
-            'Nível': 'Filho'
-        })
+# Função recursiva para percorrer todos os níveis
+def construir_hierarquia(pai_final, pai_imediato, componente, nivel):
+    hierarquia.append({
+        'Pai_Final': pai_final,
+        'Pai_Imediato': pai_imediato,
+        'Componente': componente,
+        'Nível': nivel
+    })
+    filhos = mapa_pai_filho.get(componente, [])
+    for filho in filhos:
+        construir_hierarquia(pai_final, componente, filho, f"Nível {int(nivel.split()[-1]) + 1}")
+
+# Inicia com todos os pais finais
+for _, row in estrutura.iterrows():
+    if row['Nivel'] == '1':
+        construir_hierarquia(row['Pai_Final'], row['Pai_Final'], row['Componente'], 'Nível 1')
 
 # Criar DataFrame
 df_hierarquia = pd.DataFrame(hierarquia)
 
-st.subheader("📘 Estrutura Pai → Componente")
+st.subheader("📘 Estrutura Pai → Componente (Todos os Níveis)")
 st.dataframe(df_hierarquia, use_container_width=True)
 
 # Download Excel
 buffer = BytesIO()
 df_hierarquia.to_excel(buffer, index=False)
-st.download_button("📥 Baixar Estrutura Hierárquica", buffer.getvalue(), file_name="estrutura_pai_filho.xlsx")
+st.download_button("📥 Baixar Estrutura Hierárquica Completa", buffer.getvalue(), file_name="estrutura_pai_filho_completa.xlsx")
