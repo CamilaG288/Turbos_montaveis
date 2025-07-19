@@ -1,5 +1,6 @@
 import streamlit as st
 import pandas as pd
+from io import BytesIO
 
 st.set_page_config(page_title="Análise da Estrutura", layout="wide")
 st.title("📦 Análise da Estrutura - Hierarquia Pai-Filho")
@@ -67,3 +68,8 @@ st.dataframe(df_hierarquia, use_container_width=True)
 pais_unicos = df_hierarquia['Pai_Final'].drop_duplicates()
 st.subheader("🔍 Quantidade de Pais Finais Únicos Encontrados na Estrutura:")
 st.metric(label="Pais Finais", value=len(pais_unicos))
+
+# Download do Excel da hierarquia
+buffer = BytesIO()
+df_hierarquia.to_excel(buffer, index=False)
+st.download_button("📥 Baixar Hierarquia em Excel", buffer.getvalue(), file_name="hierarquia_estrutura.xlsx")
