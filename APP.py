@@ -1,1 +1,1 @@
-df_pedidos_filtrados = df_pedidos.copy()
+st.dataframe(df_pedidos[["Tp.Doc", "Descricao", "Produto", "Quantidade_Produzir"]].head(50))
