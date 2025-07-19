@@ -26,31 +26,38 @@ estrutura = estrutura[
     (~estrutura['Pai_Final'].str.contains("Produto", case=False))
 ]
 
-# Eliminar componentes terminados em 'P' e fantasmas
-estrutura = estrutura[
-    ~estrutura['Componente'].str.endswith('P') &
-    (estrutura['Fantasma'] != 'S')
-]
+# Eliminar fantasmas
+estrutura = estrutura[estrutura['Fantasma'] != 'S']
 
-# Criar hierarquia
+# Criar hierarquia considerando filhos de conjuntos com "P" como filhos diretos do Pai_Final
 hierarquia = []
-for _, row in estrutura.iterrows():
+for i in range(len(estrutura)):
+    row = estrutura.iloc[i]
     nivel = row['Nivel']
-    if nivel == '1':
-        hierarquia.append({
-            'Pai_Final': row['Pai_Final'],
-            'Pai_Imediato': row['Pai_Final'],
-            'Componente': row['Componente'],
-            'Nível': 'Filho'
-        })
-    elif nivel == '2':
-        hierarquia.append({
-            'Pai_Final': row['Pai_Final'],
-            'Pai_Imediato': row['Componente'],
-            'Componente': None,
-            'Nível': 'Neto (componente do conjunto com P)'
-        })
+    pai_final = row['Pai_Final']
+    componente = row['Componente']
 
+    if nivel == '1':
+        # Verifica se o componente termina com P (conjunto intermediário)
+        if componente.endswith('P'):
+            # Pular este conjunto, mas tratar os filhos dele como filhos diretos do pai final
+            filhos_nivel2 = estrutura[(estrutura['Nivel'] == '2') & (estrutura[1] == componente)]
+            for _, filho in filhos_nivel2.iterrows():
+                hierarquia.append({
+                    'Pai_Final': pai_final,
+                    'Pai_Imediato': componente,
+                    'Componente': filho['Componente'],
+                    'Nível': 'Filho (via P)'
+                })
+        else:
+            hierarquia.append({
+                'Pai_Final': pai_final,
+                'Pai_Imediato': pai_final,
+                'Componente': componente,
+                'Nível': 'Filho'
+            })
+
+# Criar DataFrame da hierarquia
 df_hierarquia = pd.DataFrame(hierarquia)
 
 st.subheader("📘 Hierarquia Pai-Filho Completa")
