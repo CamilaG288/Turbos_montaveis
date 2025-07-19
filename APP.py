@@ -1,69 +1,23 @@
 import streamlit as st
 import pandas as pd
-from io import BytesIO
 
-st.set_page_config(page_title="Painel de Estoque", layout="wide")
-st.title("📦 Consulta de Estoque Atual por Componente")
+st.set_page_config(page_title="Análise da Estrutura", layout="wide")
+st.title("📦 Análise da Estrutura - Quantidade de Pais Finais")
 
-# Link da planilha de estoque e estrutura no GitHub
-URL_ESTOQUE = "https://github.com/CamilaG288/Turbos_montaveis/raw/main/ALMOX102.xlsx"
+# Caminho do arquivo
 URL_ESTRUTURA = "https://github.com/CamilaG288/Turbos_montaveis/raw/main/ESTRUTURAS.xlsx"
 
-@st.cache_data
-def carregar_estoque():
-    estoque = pd.read_excel(URL_ESTOQUE)
-    return estoque
+# Carregar a planilha completa sem pular linhas
+estrutura = pd.read_excel(URL_ESTRUTURA, header=None)
 
-@st.cache_data
-def carregar_estrutura():
-    estrutura_original = pd.read_excel(URL_ESTRUTURA)  # Não pula linhas!
-    st.write("🔧 Total de linhas na estrutura original:", len(estrutura_original))
+# Coluna B = index 1 => representa o Pai_Final
+estrutura['Pai_Final'] = estrutura[1].astype(str).str.strip()
 
-    estrutura_original.columns.values[1] = "Pai_Final"  # Coluna B
-    estrutura_original.columns.values[15] = "Componente"  # Coluna P
-    estrutura = estrutura_original.rename(columns={
-        "Qtde. Líquida": "Qtde_Liquida",
-        "Setup/Perda": "Setup",
-        "Descrição do Produto": "Descricao",
-        "Nível": "Nivel",
-        "Fantasma": "Fantasma"
-    })
+# Filtrar apenas linhas que contenham conteúdo significativo na coluna Pai_Final (descarta cabeçalhos)
+estrutura_filtrada = estrutura[estrutura['Pai_Final'].str.startswith("8")]
 
-    estrutura['Componente'] = estrutura['Componente'].astype(str).str.strip()
-    estrutura['Pai_Final'] = estrutura['Pai_Final'].astype(str).str.strip()
-    estrutura['Fantasma'] = estrutura['Fantasma'].astype(str).str.upper().str.strip()
-    estrutura['Nivel'] = estrutura['Nivel'].astype(str).str.strip()
+# Contar os pais finais únicos
+pais_unicos = estrutura_filtrada['Pai_Final'].nunique()
 
-    estrutura = estrutura[estrutura['Nivel'].isin(["1", "2"])]
-    estrutura = estrutura[~estrutura['Componente'].str.endswith("P")]
-    estrutura = estrutura[estrutura['Fantasma'] != 'S']
-
-    st.write("✅ Linhas após filtro:", len(estrutura))
-
-    return estrutura[["Pai_Final", "Componente", "Descricao", "Nivel", "Qtde_Liquida"]]
-
-# Carregando dados
-estoque_raw = carregar_estoque()
-estrutura_filtrada = carregar_estrutura()
-
-# Processar estoque
-estoque = estoque_raw.rename(columns={"Produto": "Componente", "Qtde Atual": "Quantidade"})
-estoque['Componente'] = estoque['Componente'].astype(str).str.strip()
-estoque_resumo = estoque.groupby("Componente", as_index=False)["Quantidade"].sum()
-
-# Exibir Estoque
-st.subheader("🔍 Estoque por Componente")
-st.dataframe(estoque_resumo, use_container_width=True)
-
-buffer = BytesIO()
-estoque_resumo.to_excel(buffer, index=False)
-st.download_button("📥 Baixar Estoque em Excel", data=buffer.getvalue(), file_name="estoque_resumo.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
-
-# Exibir Estrutura
-st.title("🏗️ Estrutura Pai-Filho (Níveis 1 e 2)")
-st.subheader("🔍 Estrutura Pai → Componente")
-st.dataframe(estrutura_filtrada, use_container_width=True)
-
-buffer_estrutura = BytesIO()
-estrutura_filtrada.to_excel(buffer_estrutura, index=False)
-st.download_button("📥 Baixar Estrutura Filtrada", data=buffer_estrutura.getvalue(), file_name="estrutura_filtrada.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+st.subheader("🔍 Quantidade de Pais Finais Únicos Encontrados na Estrutura:")
+st.metric(label="Pais Finais", value=pais_unicos)
