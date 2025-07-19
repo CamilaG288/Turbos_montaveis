@@ -33,42 +33,54 @@ estrutura = estrutura[estrutura['Fantasma'] != 'S']
 # Construir hierarquia completa: pai -> filho -> neto (multi-nível)
 hierarquia = []
 
-# Dicionário de componentes para buscar filhos
-estrutura_dict = estrutura.groupby([1, 'Nivel'])
+# Mapear todos os relacionamentos com nível 1 e 2
+estrutura_n1 = estrutura[estrutura['Nivel'] == '1']
+estrutura_n2 = estrutura[estrutura['Nivel'] == '2']
 
-for i in range(len(estrutura)):
-    row = estrutura.iloc[i]
+# Indexar nível 2 por pai
+filhos_n2_dict = estrutura_n2.groupby(1)
+
+for _, row in estrutura_n1.iterrows():
     pai_final = row['Pai_Final']
-    pai_imediato = pai_final
     componente = row['Componente']
-    nivel = row['Nivel']
 
-    if nivel == '1':
-        if componente.endswith('P'):
-            # Filho é um conjunto, buscar seus filhos
-            filhos_n2 = estrutura[(estrutura[1] == componente) & (estrutura['Nivel'] == '2')]
-            for _, neto in filhos_n2.iterrows():
-                hierarquia.append({
-                    'Pai_Final': pai_final,
-                    'Pai_Imediato': componente,
-                    'Componente': neto['Componente'],
-                    'Nível': 'Neto'
-                })
-            # Também registra o conjunto como filho direto
+    if componente.endswith('P'):
+        # Componente é um conjunto, buscar seus filhos
+        filhos_conjunto = estrutura_n2[estrutura_n2['Pai_Final'] == componente]
+        for _, neto in filhos_conjunto.iterrows():
             hierarquia.append({
                 'Pai_Final': pai_final,
-                'Pai_Imediato': pai_final,
-                'Componente': componente,
-                'Nível': 'Filho (Conjunto)'
+                'Pai_Imediato': componente,
+                'Componente': neto['Componente'],
+                'Nível': 'Neto'
             })
-        else:
-            # Filho comum
-            hierarquia.append({
-                'Pai_Final': pai_final,
-                'Pai_Imediato': pai_final,
-                'Componente': componente,
-                'Nível': 'Filho'
-            })
+        # Registrar o conjunto como filho também
+        hierarquia.append({
+            'Pai_Final': pai_final,
+            'Pai_Imediato': pai_final,
+            'Componente': componente,
+            'Nível': 'Filho (Conjunto)'
+        })
+    else:
+        # Componente é filho direto
+        hierarquia.append({
+            'Pai_Final': pai_final,
+            'Pai_Imediato': pai_final,
+            'Componente': componente,
+            'Nível': 'Filho'
+        })
+
+# Verificar se o componente do nível 2 tem o mesmo pai final
+for _, row in estrutura_n2.iterrows():
+    pai_final = row['Pai_Final']
+    componente = row['Componente']
+    if not componente.endswith('P') and not any(h['Componente'] == componente for h in hierarquia):
+        hierarquia.append({
+            'Pai_Final': pai_final,
+            'Pai_Imediato': pai_final,
+            'Componente': componente,
+            'Nível': 'Filho'
+        })
 
 # Criar DataFrame da hierarquia
 df_hierarquia = pd.DataFrame(hierarquia)
