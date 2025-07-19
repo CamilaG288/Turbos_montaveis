@@ -37,15 +37,13 @@ hierarquia = []
 estrutura_n1 = estrutura[estrutura['Nivel'] == '1']
 estrutura_n2 = estrutura[estrutura['Nivel'] == '2']
 
-# Indexar nível 2 por pai
-filhos_n2_dict = estrutura_n2.groupby(1)
-
+# Construir hierarquia com base na regra dos conjuntos "P"
 for _, row in estrutura_n1.iterrows():
     pai_final = row['Pai_Final']
     componente = row['Componente']
 
     if componente.endswith('P'):
-        # Componente é um conjunto, buscar seus filhos
+        # Componente é um conjunto, buscar seus filhos (nível 2)
         filhos_conjunto = estrutura_n2[estrutura_n2['Pai_Final'] == componente]
         for _, neto in filhos_conjunto.iterrows():
             hierarquia.append({
@@ -63,18 +61,6 @@ for _, row in estrutura_n1.iterrows():
         })
     else:
         # Componente é filho direto
-        hierarquia.append({
-            'Pai_Final': pai_final,
-            'Pai_Imediato': pai_final,
-            'Componente': componente,
-            'Nível': 'Filho'
-        })
-
-# Incluir componentes do nível 2 com o mesmo Pai_Final, mesmo que repetidos
-for _, row in estrutura_n2.iterrows():
-    pai_final = row['Pai_Final']
-    componente = row['Componente']
-    if not componente.endswith('P'):
         hierarquia.append({
             'Pai_Final': pai_final,
             'Pai_Imediato': pai_final,
