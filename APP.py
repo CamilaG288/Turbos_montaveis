@@ -14,9 +14,11 @@ estrutura = pd.read_excel(URL_ESTRUTURA, header=None)
 # Coluna B = index 1 => representa o Pai_Final
 # Coluna P = index 15 => Componente
 # Coluna Q = index 16 => Nível
+# Coluna S = index 18 => Fantasma
 estrutura['Pai_Final'] = estrutura[1].astype(str).str.strip()
 estrutura['Componente'] = estrutura[15].astype(str).str.strip()
 estrutura['Nivel'] = estrutura[16].astype(str).str.strip()
+estrutura['Fantasma'] = estrutura[18].astype(str).str.upper().str.strip()
 
 # Remover entradas nulas ou com cabeçalho duplicado
 estrutura = estrutura[
@@ -24,11 +26,15 @@ estrutura = estrutura[
     (~estrutura['Pai_Final'].str.contains("Produto", case=False))
 ]
 
+# Eliminar fantasmas
+estrutura = estrutura[estrutura['Fantasma'] != 'S']
+
 # Construir hierarquia completa: pai -> filho -> neto (multi-nível)
 hierarquia = []
 
 # Mapear todos os relacionamentos com nível 1 e 2
 estrutura_n1 = estrutura[estrutura['Nivel'] == '1']
+estrutura_n2 = estrutura[estrutura['Nivel'] == '2']
 
 # Construir hierarquia com base na regra dos conjuntos "P"
 for _, row in estrutura_n1.iterrows():
@@ -36,8 +42,8 @@ for _, row in estrutura_n1.iterrows():
     componente = row['Componente']
 
     if componente.endswith('P'):
-        # Componente é um conjunto, buscar seus filhos (em qualquer nível)
-        filhos_conjunto = estrutura[estrutura['Pai_Final'] == componente]
+        # Componente é um conjunto, buscar seus filhos (nível 2)
+        filhos_conjunto = estrutura_n2[estrutura_n2['Pai_Final'] == componente]
         for _, neto in filhos_conjunto.iterrows():
             hierarquia.append({
                 'Pai_Final': pai_final,
