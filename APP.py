@@ -13,8 +13,12 @@ estrutura = pd.read_excel(URL_ESTRUTURA, header=None)
 # Coluna B = index 1 => representa o Pai_Final
 estrutura['Pai_Final'] = estrutura[1].astype(str).str.strip()
 
-# Filtrar apenas linhas que contenham conteúdo significativo na coluna Pai_Final (descarta cabeçalhos)
-estrutura_filtrada = estrutura[estrutura['Pai_Final'].str.startswith("8")]
+# Filtrar códigos válidos como pais finais (não vazios, com hífen, e tamanho mínimo)
+estrutura_filtrada = estrutura[
+    estrutura['Pai_Final'].notna() &
+    estrutura['Pai_Final'].str.contains("-", na=False) &
+    estrutura['Pai_Final'].str.len() >= 5
+]
 
 # Contar os pais finais únicos
 pais_unicos = estrutura_filtrada['Pai_Final'].nunique()
