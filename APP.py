@@ -30,27 +30,39 @@ estrutura = estrutura[
 # Eliminar fantasmas
 estrutura = estrutura[estrutura['Fantasma'] != 'S']
 
-# Criar hierarquia considerando filhos de conjuntos com "P" como filhos diretos do Pai_Final
+# Construir hierarquia completa: pai -> filho -> neto (multi-nível)
 hierarquia = []
+
+# Dicionário de componentes para buscar filhos
+estrutura_dict = estrutura.groupby([1, 'Nivel'])
+
 for i in range(len(estrutura)):
     row = estrutura.iloc[i]
-    nivel = row['Nivel']
     pai_final = row['Pai_Final']
+    pai_imediato = pai_final
     componente = row['Componente']
+    nivel = row['Nivel']
 
     if nivel == '1':
-        # Verifica se o componente termina com P (conjunto intermediário)
         if componente.endswith('P'):
-            # Pular este conjunto, mas tratar os filhos dele como filhos diretos do pai final
-            filhos_nivel2 = estrutura[(estrutura['Nivel'] == '2') & (estrutura[1] == componente)]
-            for _, filho in filhos_nivel2.iterrows():
+            # Filho é um conjunto, buscar seus filhos
+            filhos_n2 = estrutura[(estrutura[1] == componente) & (estrutura['Nivel'] == '2')]
+            for _, neto in filhos_n2.iterrows():
                 hierarquia.append({
                     'Pai_Final': pai_final,
                     'Pai_Imediato': componente,
-                    'Componente': filho['Componente'],
-                    'Nível': 'Filho (via P)'
+                    'Componente': neto['Componente'],
+                    'Nível': 'Neto'
                 })
+            # Também registra o conjunto como filho direto
+            hierarquia.append({
+                'Pai_Final': pai_final,
+                'Pai_Imediato': pai_final,
+                'Componente': componente,
+                'Nível': 'Filho (Conjunto)'
+            })
         else:
+            # Filho comum
             hierarquia.append({
                 'Pai_Final': pai_final,
                 'Pai_Imediato': pai_final,
