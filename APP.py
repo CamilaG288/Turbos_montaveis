@@ -20,13 +20,18 @@ df_pedidos = pd.read_excel(URL_PEDIDOS)
 # Quantidade a produzir
 df_pedidos["Quantidade_Produzir"] = df_pedidos.iloc[:, 15] - (df_pedidos.iloc[:, 16] - df_pedidos.iloc[:, 13])
 
-# Palavras a excluir pela descrição (coluna 8)
-desc_excluir_pedidos = ["BONÉ", "CAMISETA", "CHAVEIRO", "CORTA VENTO", "CORTE"]
+# Normalização de textos
 df_pedidos["Descricao"] = df_pedidos["Descricao"].astype(str).str.upper()
+df_pedidos["Tp.Doc"] = df_pedidos["Tp.Doc"].astype(str).str.upper()
+
+# Filtros
+desc_excluir_pedidos = ["BONÉ", "CAMISETA", "CHAVEIRO", "CORTA VENTO", "CORTE"]
+tipos_doc_excluir = ["PCONS", "PEF"]
 
 df_pedidos_filtrados = df_pedidos[
     (df_pedidos["Quantidade_Produzir"] > 0) &
-    (~df_pedidos["Descricao"].str.contains("|".join(desc_excluir_pedidos)))
+    (~df_pedidos["Descricao"].str.contains("|".join(desc_excluir_pedidos))) &
+    (~df_pedidos["Tp.Doc"].isin(tipos_doc_excluir))
 ].copy()
 
 colunas_exibir = [
@@ -38,7 +43,7 @@ st.subheader("📌 Pedidos com Quantidade a Produzir > 0")
 st.dataframe(df_exibir)
 
 st.download_button(
-    label="📥 Baixar Pedidos com Qtde. Real > 0",
+    label="📥 Baixar Pedidos com Qtde. Produzir > 0",
     data=converter_para_excel(df_exibir),
     file_name="pedidos_quantidade_produzir.xlsx",
     mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
@@ -72,7 +77,7 @@ for _, row in df_estrutura_limpa.iterrows():
     if pd.notna(pai) and pd.notna(filho) and pd.notna(qtd):
         estrutura_dict.setdefault(pai, []).append((filho, qtd))
 
-# Palavras para exclusão pela descrição dos componentes (coluna R = 17)
+# Exclusões por descrição de componentes (coluna R = 17)
 desc_excluir_componentes = [
     "SACO PLASTICO", "CAIXA", "PLAQUETA", "REBITE", "ETIQUETA", "CERTIFICADO", "CINTA PLASTICA"
 ]
@@ -86,7 +91,7 @@ for _, pedido in df_pedidos_filtrados.iterrows():
 
     for filho1, qtd1 in filhos_n1:
         desc1 = df_estrutura_limpa[df_estrutura_limpa.iloc[:, 15] == filho1].iloc[0, 17].upper()
-        if any(palavra in desc1 for palavra in desc_excluir_componentes):
+        if any(p in desc1 for p in desc_excluir_componentes):
             continue
 
         if filho1.endswith("P"):
