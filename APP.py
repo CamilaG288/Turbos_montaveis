@@ -35,7 +35,6 @@ hierarquia = []
 
 # Mapear todos os relacionamentos com nível 1 e 2
 estrutura_n1 = estrutura[estrutura['Nivel'] == '1']
-estrutura_n2 = estrutura[estrutura['Nivel'] == '2']
 
 # Construir hierarquia com base na regra dos conjuntos "P"
 for _, row in estrutura_n1.iterrows():
@@ -43,8 +42,8 @@ for _, row in estrutura_n1.iterrows():
     componente = row['Componente']
 
     if componente.endswith('P'):
-        # Componente é um conjunto, buscar seus filhos (nível 2)
-        filhos_conjunto = estrutura_n2[estrutura_n2['Pai_Final'] == componente]
+        # Componente é um conjunto, buscar seus filhos (em qualquer nível)
+        filhos_conjunto = estrutura[estrutura['Pai_Final'] == componente]
         for _, neto in filhos_conjunto.iterrows():
             hierarquia.append({
                 'Pai_Final': pai_final,
