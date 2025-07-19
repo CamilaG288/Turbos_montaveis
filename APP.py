@@ -5,7 +5,6 @@ from io import BytesIO
 st.set_page_config(page_title="Análise de Pedidos", layout="wide")
 st.title("📦 Análise de Pedidos - Qtde. Produzir + Estrutura Nível 2")
 
-# Função auxiliar para exportar Excel
 def converter_para_excel(df):
     output = BytesIO()
     with pd.ExcelWriter(output, engine="openpyxl") as writer:
@@ -13,7 +12,7 @@ def converter_para_excel(df):
     output.seek(0)
     return output
 
-# --- ETAPA 1: Análise dos Pedidos ---
+# --- ETAPA 1: PEDIDOS ---
 
 URL_PEDIDOS = "https://github.com/CamilaG288/Turbos_montaveis/raw/main/PEDIDOS.xlsx"
 df_pedidos = pd.read_excel(URL_PEDIDOS)
@@ -36,14 +35,14 @@ st.download_button(
     mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
 )
 
-# --- ETAPA 2: Explosão de Estrutura até Nível 2 com ajuste de conjuntos "P" ---
+# --- ETAPA 2: ESTRUTURA NÍVEL 2 ---
 
 URL_ESTRUTURA = "https://github.com/CamilaG288/Turbos_montaveis/raw/main/ESTRUTURAS.xlsx"
 df_estrutura = pd.read_excel(URL_ESTRUTURA)
 
-# Limpeza e conversão
-df_estrutura.iloc[:, 1] = df_estrutura.iloc[:, 1].astype(str).str.strip()    # Coluna B - pai
-df_estrutura.iloc[:, 15] = df_estrutura.iloc[:, 15].astype(str).str.strip() # Coluna P - filho
+# Limpeza
+df_estrutura.iloc[:, 1] = df_estrutura.iloc[:, 1].astype(str).str.strip()    # Pai (B)
+df_estrutura.iloc[:, 15] = df_estrutura.iloc[:, 15].astype(str).str.strip() # Filho (P)
 df_estrutura.iloc[:, 22] = (
     df_estrutura.iloc[:, 22]
     .astype(str)
@@ -52,12 +51,12 @@ df_estrutura.iloc[:, 22] = (
     .astype(float)
 )
 
-# Filtro: remove fantasmas e garante filhos válidos
+# Filtro: não fantasma e com filho válido
 df_estrutura_limpa = df_estrutura[
     (df_estrutura.iloc[:, 19] != "S") & (df_estrutura.iloc[:, 15].notna())
 ].copy()
 
-# Criar dicionário pai → [(filho, qtd)]
+# Mapear estrutura: pai → [(filho, qtd)]
 estrutura_dict = {}
 for _, row in df_estrutura_limpa.iterrows():
     pai = row.iloc[1]
@@ -66,19 +65,30 @@ for _, row in df_estrutura_limpa.iterrows():
     if pd.notna(pai) and pd.notna(filho) and pd.notna(qtd):
         estrutura_dict.setdefault(pai, []).append((filho, qtd))
 
-# Explodir estrutura até nível 2
+# Palavras-chave para exclusão via descrição (coluna R = índice 17)
+palavras_excluir = [
+    "SACO PLASTICO", "CAIXA", "PLAQUETA", "REBITE", "ETIQUETA", "CERTIFICADO", "CINTA PLASTICA"
+]
+
 estrutura_expandidas = []
 
 for _, pedido in df_pedidos_filtrados.iterrows():
     pai_final = str(pedido["Produto"]).strip()
     qtd_produzir = pedido["Quantidade_Produzir"]
-
     filhos_n1 = estrutura_dict.get(pai_final, [])
 
     for filho1, qtd1 in filhos_n1:
+        desc1 = df_estrutura_limpa[df_estrutura_limpa.iloc[:, 15] == filho1].iloc[0, 17].upper()
+
+        if any(p in desc1 for p in palavras_excluir):
+            continue
+
         if filho1.endswith("P"):
             filhos_do_P = estrutura_dict.get(filho1, [])
             for filho2, qtd2 in filhos_do_P:
+                desc2 = df_estrutura_limpa[df_estrutura_limpa.iloc[:, 15] == filho2].iloc[0, 17].upper()
+                if any(p in desc2 for p in palavras_excluir):
+                    continue
                 estrutura_expandidas.append({
                     "Pai Final": pai_final,
                     "Componente": filho2,
@@ -101,10 +111,10 @@ for _, pedido in df_pedidos_filtrados.iterrows():
                 "Pedido": pedido["Pedido"]
             })
 
-# Resultado da estrutura expandida
+# Resultado final
 df_estrutura_nivel2 = pd.DataFrame(estrutura_expandidas)
 
-st.subheader("🧬 Estrutura Explodida até Nível 2 (com ajuste de conjuntos 'P')")
+st.subheader("🧬 Estrutura Explodida até Nível 2 (ajustada)")
 st.dataframe(df_estrutura_nivel2)
 
 st.download_button(
