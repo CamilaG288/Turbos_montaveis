@@ -13,7 +13,6 @@ def converter_para_excel(df):
     return output
 
 # --- ETAPA 1: CARREGAR PEDIDOS ---
-
 URL_PEDIDOS = "https://github.com/CamilaG288/Turbos_montaveis/raw/main/PEDIDOS.xlsx"
 df_pedidos = pd.read_excel(URL_PEDIDOS)
 
@@ -34,8 +33,10 @@ df_pedidos_filtrados = df_pedidos[
     (~df_pedidos["Tp.Doc"].isin(tipos_doc_excluir))
 ].copy()
 
-# --- ETAPA 2: CARREGAR ESTRUTURA ---
+st.write("📥 Pedidos carregados:", df_pedidos.shape)
+st.write("📋 Pedidos após filtros:", df_pedidos_filtrados.shape)
 
+# --- ETAPA 2: CARREGAR ESTRUTURA ---
 URL_ESTRUTURA = "https://github.com/CamilaG288/Turbos_montaveis/raw/main/ESTRUTURAS.xlsx"
 df_estrutura = pd.read_excel(URL_ESTRUTURA)
 
@@ -52,6 +53,9 @@ df_estrutura.iloc[:, 22] = (
 df_estrutura_limpa = df_estrutura[
     (df_estrutura.iloc[:, 19] != "S") & (df_estrutura.iloc[:, 15].notna())
 ].copy()
+
+st.write("📦 Estrutura carregada:", df_estrutura.shape)
+st.write("🔍 Estrutura após limpeza:", df_estrutura_limpa.shape)
 
 # Dicionário pai → [(filho, qtd)]
 estrutura_dict = {}
@@ -75,16 +79,25 @@ for _, pedido in df_pedidos_filtrados.iterrows():
     filhos_n1 = estrutura_dict.get(pai_final, [])
 
     for filho1, qtd1 in filhos_n1:
-        desc1 = df_estrutura_limpa[df_estrutura_limpa.iloc[:, 15] == filho1].iloc[0, 17].upper()
+        try:
+            desc1 = df_estrutura_limpa[df_estrutura_limpa.iloc[:, 15] == filho1].iloc[0, 17].upper()
+        except:
+            continue
+
         if any(p in desc1 for p in desc_excluir_componentes):
             continue
 
         if filho1.endswith("P"):
             filhos_p = estrutura_dict.get(filho1, [])
             for filho2, qtd2 in filhos_p:
-                desc2 = df_estrutura_limpa[df_estrutura_limpa.iloc[:, 15] == filho2].iloc[0, 17].upper()
+                try:
+                    desc2 = df_estrutura_limpa[df_estrutura_limpa.iloc[:, 15] == filho2].iloc[0, 17].upper()
+                except:
+                    continue
+
                 if any(p in desc2 for p in desc_excluir_componentes):
                     continue
+
                 estrutura_final.append({
                     "Pai Final": pai_final,
                     "Componente": filho2,
@@ -104,6 +117,7 @@ for _, pedido in df_pedidos_filtrados.iterrows():
             })
 
 df_estrutura_n2 = pd.DataFrame(estrutura_final)
+st.write("🔧 Estrutura expandida:", df_estrutura_n2.shape)
 
 # --- ETAPA 3: RESUMO AGRUPADO ---
 
@@ -129,7 +143,6 @@ df_resumo = df_resumo[
 ]
 
 # --- EXIBIÇÃO ---
-
 st.subheader("📊 Consolidado - Componentes por Produto Final")
 st.dataframe(df_resumo)
 
@@ -139,4 +152,3 @@ st.download_button(
     file_name="resumo_componentes_consolidado.xlsx",
     mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
 )
-
