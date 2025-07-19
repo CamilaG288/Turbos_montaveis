@@ -10,6 +10,10 @@ URL_ESTRUTURA = "https://github.com/CamilaG288/Turbos_montaveis/raw/main/ESTRUTU
 # Carregar a planilha completa sem pular linhas
 estrutura = pd.read_excel(URL_ESTRUTURA, header=None)
 
+# Visualizar as primeiras linhas para entender a estrutura da planilha
+st.subheader("👀 Primeiras linhas da estrutura bruta:")
+st.dataframe(estrutura.head(10))
+
 # Coluna B = index 1 => representa o Pai_Final
 estrutura['Pai_Final'] = estrutura[1].astype(str).str.strip()
 
