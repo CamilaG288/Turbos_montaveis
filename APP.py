@@ -16,7 +16,7 @@ def carregar_estoque():
 
 @st.cache_data
 def carregar_estrutura():
-    estrutura = pd.read_excel(URL_ESTRUTURA, skiprows=1)
+    estrutura = pd.read_excel(URL_ESTRUTURA)  # Removido skiprows
     estrutura.columns.values[15] = "Componente"
     estrutura = estrutura.rename(columns={
         "Produto": "Pai_Final",
